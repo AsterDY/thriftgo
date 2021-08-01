@@ -183,10 +183,16 @@ func (cu *CodeUtils) Import(t *parser.Thrift) (pkg, pth string) {
 // GenTags generates go tags for the given parser.Field.
 func (cu *CodeUtils) GenTags(f *parser.Field, insertPoint string) (string, error) {
 	var tags []string
-	if f.Requiredness == parser.FieldType_Required {
-		tags = append(tags, fmt.Sprintf(`thrift:"%s,%d,required"`, f.Name, f.ID))
+	if cu.Features().SupportJIT {
+		requirness := strings.ToLower(f.Requiredness.String())
+		typed := strings.ReplaceAll(f.Type.String(), ",", ":")
+		tags = append(tags, fmt.Sprintf(`"thrift:"%s,%d,%s,%s"`, f.Name, f.ID, requirness, typed))
 	} else {
-		tags = append(tags, fmt.Sprintf(`thrift:"%s,%d"`, f.Name, f.ID))
+		if f.Requiredness == parser.FieldType_Required {
+			tags = append(tags, fmt.Sprintf(`thrift:"%s,%d,required"`, f.Name, f.ID))
+		} else {
+			tags = append(tags, fmt.Sprintf(`thrift:"%s,%d"`, f.Name, f.ID))
+		}
 	}
 
 	if gotags := f.Annotations.Get("go.tag"); len(gotags) > 0 {
